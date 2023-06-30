@@ -1,3 +1,4 @@
+RapinNetSim is a fast and scalable event-driven network simulator.
 
 
 # Prerequisites
