@@ -18,11 +18,24 @@ def del_global_record_trigger_new_step(taskid, stepid):
             flow.set_last_calculated_time(Simulator.get_current_time())
             flow_list.append(flow)
 
-        computation_time = float(Simulator.CONF_DICT['computation_time'])
-        Simulator.register_event(FlowTransmitEvent(computation_time, flow_list))
+        # computation_time = float(Simulator.CONF_DICT['computation_time'])
+        # Simulator.register_event(FlowTransmitEvent(computation_time, flow_list))
+        if taskid == 2312:
+            print("debug next round ",taskid,stepid,stepid+1)
+        # If a communication iteration is finished, add computation time delay.
+        roundid_flag_list = Simulator.ITERATION_FINISH_ROUNDID_DICT[taskid]
+        if stepid in roundid_flag_list:
+            computation_time = float(eval(Simulator.CONF_DICT['task_list'])[taskid][3])
+            Simulator.register_event(FlowTransmitEvent(computation_time, flow_list))
+        else:
+        #     if taskid == 2312:
+        #         Simulator.register_event(FlowTransmitEvent(0.00000001, flow_list))
+        #     else:
+        #         Simulator.register_event(FlowTransmitEvent(0, flow_list))
+            Simulator.register_event(FlowTransmitEvent(0.00000001, flow_list))
     else:
         print(f'Task {taskid} is done at time {Simulator.get_current_time()}!')
-
+        print(f'debug Task {taskid} {stepid} is done')
         Simulator.task_time_logger.write(f'taskid,{taskid},finish_time,{Simulator.get_current_time()}\n')
 
         scheduler = Simulator.get_scheduler()
@@ -62,7 +75,7 @@ def allocate_a_task(scheduler, model_size, task_occupied_NIC_num, task_type_obj,
 
     not_need_refresh = True
 
-    allocate_succeed, gpu_indexes, allocated_link_mapping, all_gpu_index, link_mapping = scheduler.schedule(task_occupied_NIC_num, taskid, current_time, Simulator.WAITING_TASK_LIST)
+    allocate_succeed, gpu_indexes, allocated_link_mapping, all_gpu_index, special_pair, link_mapping = scheduler.schedule(task_occupied_NIC_num, taskid, current_time, Simulator.WAITING_TASK_LIST)
 
     if allocate_succeed == True:
         temp_used_leaf_list = []
@@ -71,7 +84,8 @@ def allocate_a_task(scheduler, model_size, task_occupied_NIC_num, task_type_obj,
             if temp_leaf_index not in temp_used_leaf_list:
                 temp_used_leaf_list.append(temp_leaf_index)
         
-        if Simulator.CONF_DICT['joint_scheduler'] in ['mesh_scheduler', 'mesh_cross', 'GPUPlacemeter', 'GPUPlacemeter2', 'GPUPlacemeter3', 'StaticPlacementer', 'hw_oxc_all2all', 'hw_oxc_all2all_sz', 'hw_oxc_all2all2', 'hw_oxc_allreduce', 'hw_oxc_hdallreduce', 'hw_oxc_allreduce_nopeer']:
+        #if Simulator.CONF_DICT['joint_scheduler'] in ['mesh_cross', 'hw_oxc_all2all', 'hw_oxc_all2all_sz', 'hw_oxc_all2all2', 'hw_oxc_allreduce', 'hw_oxc_hdallreduce', 'hw_oxc_allreduce_nopeer', 'static_scheduler', 'GPUPlacemeter3']:
+        if Simulator.CONF_DICT['joint_scheduler'] in ['mesh_cross', 'hw_oxc_all2all', 'hw_oxc_all2all_sz', 'hw_oxc_all2all2', 'hw_oxc_allreduce', 'hw_oxc_hdallreduce', 'hw_oxc_allreduce_nopeer', 'GPUPlacemeter3']:
             # Update topology and path dict
             Simulator.reconfigure(allocated_link_mapping, taskid)
             print("finish reconfig")

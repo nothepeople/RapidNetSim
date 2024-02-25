@@ -1,6 +1,7 @@
 
 
 import random
+import mmh3
 
 class Flow:
     def __init__(self, flowid, size, start_time, src, dst, remainder_size, last_calculated_time, taskid, stepid, task_occupied_NIC_num, todo = False, use_NIC_list = []) -> None:
@@ -74,11 +75,6 @@ class Flow:
             return hop_list
 
 
-        if Simulator.CONF_DICT['joint_scheduler'] == 'mesh_scheduler':
-            hop_list = self._get_mesh_apx_clos_hop_list(self._src, self._dst)
-            self._hop_list = hop_list
-            return hop_list
-
 
         if Simulator.CONF_DICT['joint_scheduler'] in ['hw_oxc_all2all', 'hw_oxc_all2all_sz', 'hw_oxc_all2all2', 'hw_oxc_allreduce', 'hw_oxc_hdallreduce', 'hw_oxc_allreduce_nopeer']:
             hop_list = self._get_hw_oxc_hop_list(self._src, self._dst)
@@ -92,7 +88,6 @@ class Flow:
         # Find subsequent paths.
         find_next_hop_method = Simulator.CONF_DICT['find_next_hop_method']
         assert find_next_hop_method in ['random', 'conservative', 'static_routing', 'static_routing2']
-
         assert(len(device_path_dict[self._src].get_connected_to_list()) == 1)
         assert(len(device_path_dict[self._dst].get_connected_to_list()) == 1)
         src_ToR = device_path_dict[self._src].get_connected_to_list()[0]
@@ -194,6 +189,7 @@ class Flow:
         else:
             src_server_id, src_nic_serial = absolute_nic_to_relative_indices[src]
             dst_server_id, dst_nic_serial = absolute_nic_to_relative_indices[dst]
+            #print("debug num_nics_per_server",num_nics_per_server,server_num,num_nics_per_server % server_num,64%4)
             assert(num_nics_per_server % server_num == 0)
             link_num = num_nics_per_server // server_num
             # there are multiple links between the two servers
@@ -215,7 +211,14 @@ class Flow:
         # Currently, if every NIC has multiple shortest paths to another NIC,
         # we select a shortest path randomly.
         while True:
-            rdm = random.randint(0, len(to_dst_next_hop_list) - 1)
+            # random.seed()
+            # rdm = random.randint(0, len(to_dst_next_hop_list) - 1)
+            # print("debug to_dst_next_hop_list", len(to_dst_next_hop_list))
+            random.seed()
+            port_id = random.randint(0, len(to_dst_next_hop_list) - 1)
+            hash_value = (self._src+self._dst+tmp_src+port_id)
+            rdm = mmh3.hash('foo',hash_value)%len(to_dst_next_hop_list)
+            # print("debug rdm",rdm)
             next_hop = to_dst_next_hop_list[rdm]
             if next_hop not in hop_list:
                 # Avoid repeat loop paths.

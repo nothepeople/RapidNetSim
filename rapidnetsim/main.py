@@ -46,11 +46,11 @@ if __name__ == "__main__":
 
     end_time = time.time()
 
-
-    print('Conflicting flows num:', Simulator.CONFLICT_TASKSTEPFLOW_RECORD)
+    conflict_num = len(Simulator.CONFLICT_TASKSTEPFLOW_RECORD)
+    print('Conflicting flows num:', conflict_num)
     print('Max flowid:', Simulator.FLOWID - 1)
     if Simulator.FLOWID > 1:
-        print('Conflicting flow proportion:', Simulator.CONFLICT_TASKSTEPFLOW_RECORD / (Simulator.FLOWID - 1))
+        print('Conflicting flow proportion:', conflict_num / (Simulator.FLOWID - 1))
 
     print('Simulation execution time:', end_time - start_time)
 

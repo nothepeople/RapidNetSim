@@ -24,7 +24,6 @@ class InfraBase:
         vertex_set = self._graph.get_vertex_set()
         for index in vertex_set:
             self._device_path_dict[index] = Device(index)
-        
         for (start_node_index, end_node_index, link_num) in connect_info_list:
             self.create_connection(start_node_index, end_node_index, link_num)
 

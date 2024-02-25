@@ -2,6 +2,7 @@
 from rapidnetsim.core.event.event import Event
 from rapidnetsim.task.waiting_task import WaitingTask
 import rapidnetsim.core.stage_controller as sc
+import random 
 
 class TaskStartEvent(Event):
     """Trigger flows in task when simulation time has reached arriving time.
@@ -9,7 +10,7 @@ class TaskStartEvent(Event):
     def __init__(self, time_from_now, model_size, task_occupied_NIC_num, task_type_obj, taskid, task_type, task_iteration_num, NIC_num_in_a_server) -> None:
         super().__init__(time_from_now)
         self._time_from_now = time_from_now
-        self._model_size = model_size
+        self._model_size = model_size*(1+random.uniform(-0.5,0.5))
         self._task_occupied_NIC_num = task_occupied_NIC_num
         self._task_type_obj = task_type_obj
         self._taskid = taskid

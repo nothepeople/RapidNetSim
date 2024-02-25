@@ -26,7 +26,7 @@ class FlowTransmitEvent(Event):
             flowid = flow.get_flowid()
 
             flow_size = flow.get_size()
-                
+            
             flow.find_hop_list()
             hop_list = flow.get_hop_list()
 
@@ -45,17 +45,19 @@ class FlowTransmitEvent(Event):
             next_hop = None
             tmp_src = src
             if hop_list == []:
-                Simulator.add_task_step_link_occupy(taskid, stepid, src, dst, 0)
+                Simulator.add_task_step_link_occupy(taskid, stepid, flowid, src, dst, 0)
 
             for next_hop, relative_port in hop_list:
                 # Ongoing path is (tmp_src, next_hop)
                 # Necessary: Refresh network occupied condition.
                 # infra.add_link_flow_occupy(flowid, tmp_src, next_hop, taskid)
-                Simulator.add_task_step_link_occupy(taskid, stepid, tmp_src, next_hop, relative_port)
+                Simulator.add_task_step_link_occupy(taskid, stepid, flowid, tmp_src, next_hop, relative_port)
 
                 # Update next hop path
                 tmp_src = next_hop
             
             # infra.set_flow_infly_info(flowid, flow, taskid)    # Necessary
 
-        Simulator.set_inflight_taskstep_info(taskid, TaskStep(taskid, stepid, flow_size, across_network))
+        if taskid == 2312 or taskid == 2311 or taskid == 2313:
+            print("debug step start ",taskid, stepid, flow_size)
+        Simulator.set_inflight_taskstep_info(taskid, TaskStep(taskid, stepid, flow_size, across_network, Simulator.get_current_time()))

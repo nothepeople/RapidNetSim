@@ -8,6 +8,8 @@ from rapidnetsim.conf.global_conf import GlobalConf
 from rapidnetsim.core.infrastructure.infra_base import InfraBase
 from rapidnetsim.core.network_refresh import refresh_taskstep_finish_event
 from rapidnetsim.scheduler.hw_oxc.hw_oxc_scheduler2 import HwOxcScheduler2
+from rapidnetsim.scheduler.locality_scheduler.gpu_placementer import GpuPlacementer
+from rapidnetsim.scheduler.static_scheduler_multi_cluster.static_scheduler import static_scheduler
 
 class Simulator:
     """Simulator takes charge of the global management of
@@ -41,7 +43,9 @@ class Simulator:
 
     TASK_STEP_LINK_OCCUPY = {}
 
-    CONFLICT_TASKSTEPFLOW_RECORD = 0
+    CONFLICT_TASKSTEPFLOW_RECORD = set()
+
+    SCHEDULER_TIME_COST = {}
 
 
     def __init__(self) -> None:
@@ -105,7 +109,7 @@ class Simulator:
 
         scheduler_type = Simulator.CONF_DICT['joint_scheduler']
         if scheduler_type in ['hw_eps_all2all', 'hw_eps_all2all2',
-                              'hw_eps_all2all_old', 'hw_eps_all2all_hierachical', 'hw_eps_hdallreduce', 'hw_eps_allreduce']:
+                              'hw_eps_all2all_old', 'hw_eps_all2all_hierachical', 'hw_eps_hdallreduce', 'hw_eps_allreduce', 'static_scheduler']:
             # Find all paths in advance
             print('Finding all paths in advance start.', flush = True)
             # -2 means no reconfiguration
@@ -116,7 +120,7 @@ class Simulator:
             'hw_eps_all2all', 'hw_eps_all2all_old', 'hw_eps_all2all2',
             'hw_eps_hdallreduce', 'hw_eps_allreduce',
             'hw_oxc_all2all', 'hw_oxc_all2all2', 'hw_oxc_all2all_sz',
-            'hw_eps_all2all_hierachical', 'hw_oxc_allreduce', 'hw_oxc_hdallreduce', 'hw_oxc_allreduce_nopeer'
+            'hw_eps_all2all_hierachical', 'hw_oxc_allreduce', 'hw_oxc_hdallreduce', 'hw_oxc_allreduce_nopeer','static_scheduler','GPUPlacemeter3'
         ]
         assert scheduler_type in allow_type_list
 
@@ -287,6 +291,23 @@ class Simulator:
         elif Simulator.CONF_DICT['joint_scheduler'] in ['hw_eps_all2all', 'hw_eps_all2all_old', 'hw_eps_all2all2', 'hw_eps_all2all_hierachical', 'hw_eps_hdallreduce', 'hw_eps_allreduce']:
             NIC_num_in_a_server = int(Simulator.CONF_DICT['NIC_num_in_a_server'])
             Simulator._scheduler = HwOxcScheduler2(NIC_num_in_a_server, NIC_num)
+        elif Simulator.CONF_DICT['joint_scheduler'] in ['static_scheduler', 'static']:
+            NIC_num = int(Simulator.CONF_DICT['NIC_num'])
+            spine_switch_num = int(Simulator.CONF_DICT['spine_switch_num'])
+            spine_switch_port_num = int(Simulator.CONF_DICT['spine_switch_port_num'])
+            leaf_switch_num = int(Simulator.CONF_DICT['leaf_switch_num'])
+            leaf_switch_port_num = int(Simulator.CONF_DICT['leaf_switch_port_num'])
+            gpu_per_server = int(Simulator._global_conf.get_parameter('NIC_num_in_a_server'))
+            Simulator._scheduler = static_scheduler(spine_switch_num, leaf_switch_num, spine_switch_port_num, leaf_switch_port_num)
+        elif Simulator.CONF_DICT['joint_scheduler'] in ['GPUPlacemeter3']:
+            NIC_num = int(Simulator.CONF_DICT['NIC_num'])
+            spine_switch_num = int(Simulator.CONF_DICT['spine_switch_num'])
+            spine_switch_port_num = int(Simulator.CONF_DICT['spine_switch_port_num'])
+            leaf_switch_num = int(Simulator.CONF_DICT['leaf_switch_num'])
+            leaf_switch_port_num = int(Simulator.CONF_DICT['leaf_switch_port_num'])
+            gpu_per_server = int(Simulator._global_conf.get_parameter('NIC_num_in_a_server'))
+            Simulator._scheduler = GpuPlacementer(spine_switch_num, leaf_switch_num, spine_switch_port_num, leaf_switch_port_num, int(NIC_num/gpu_per_server), NIC_num, int(leaf_switch_port_num/2) )
+        
 
 
     @staticmethod
@@ -303,6 +324,13 @@ class Simulator:
         
         Simulator.waiting_task_logger = open('./waiting_task.log', 'w')
         Simulator.waiting_task_logger.write('time,waiting_task_num\n')
+
+        Simulator.task_clean1 = open('./fragmention.txt', 'w')
+        Simulator.task_clean1 = open('./gpu_utilization.txt', 'w')
+        Simulator.task_clean1 = open('./queue_length.txt', 'w')
+        Simulator.task_clean1 = open('./job_usage_log.txt', 'w')
+        Simulator.task_clean1 = open('./schedule_time_cost.txt', 'w')
+        Simulator.task_clean1 = open('./schedule_time_cost_m*n.txt', 'w')
 
 
     @staticmethod
@@ -377,9 +405,9 @@ class Simulator:
 
 
     @staticmethod
-    def add_link_occupied_for_tasks(taskid, src, dst, relative_port):
+    def add_link_occupied_for_tasks(taskid, flowid, src, dst, relative_port):
         if Simulator.LINK_OCCUPIED_FOR_TASKS.get((src, dst, relative_port)):
-            Simulator.CONFLICT_TASKSTEPFLOW_RECORD += 1
+            Simulator.CONFLICT_TASKSTEPFLOW_RECORD.add(flowid)
             Simulator.LINK_OCCUPIED_FOR_TASKS[(src, dst, relative_port)].append(taskid)
         else:
             Simulator.LINK_OCCUPIED_FOR_TASKS[(src, dst, relative_port)] = [taskid]
@@ -396,7 +424,7 @@ class Simulator:
 
 
     @staticmethod
-    def add_task_step_link_occupy(taskid, stepid, tmp_src, next_hop, relative_port):
+    def add_task_step_link_occupy(taskid, stepid, flowid, tmp_src, next_hop, relative_port):
         if not Simulator.TASK_STEP_LINK_OCCUPY.get(taskid):
             Simulator.TASK_STEP_LINK_OCCUPY[taskid] = {}
         if Simulator.TASK_STEP_LINK_OCCUPY[taskid].get(stepid):
@@ -404,7 +432,7 @@ class Simulator:
         else:
             Simulator.TASK_STEP_LINK_OCCUPY[taskid][stepid] = [(tmp_src, next_hop, relative_port)]
 
-        Simulator.add_link_occupied_for_tasks(taskid, tmp_src, next_hop, relative_port)
+        Simulator.add_link_occupied_for_tasks(taskid, flowid, tmp_src, next_hop, relative_port)
 
 
     @staticmethod

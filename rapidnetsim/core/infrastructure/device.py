@@ -68,13 +68,11 @@ class Device:
 
         if taskid not in self._to_next_hop_dict:
             self._to_next_hop_dict[taskid] = {}
-
-        if self._to_next_hop_dict[taskid].get(dst_id):
-            if next_hop_id in self._to_next_hop_dict[taskid].get(dst_id):
-                # raise Exception(f"Duplicate add {next_hop_id} in _to_next_hop_dict.")
-                # print(f"Duplicate add {next_hop_id} in _to_next_hop_dict.")
-                return
-
+        # if self._to_next_hop_dict[taskid].get(dst_id):
+        #     if next_hop_id in self._to_next_hop_dict[taskid].get(dst_id):
+        #         # raise Exception(f"Duplicate add {next_hop_id} in _to_next_hop_dict.")
+        #         # print(f"Duplicate add {next_hop_id} in _to_next_hop_dict.")
+        #         return
         if self._to_next_hop_dict[taskid].get(dst_id):
             self._to_next_hop_dict[taskid][dst_id].append(next_hop_id)
         else:

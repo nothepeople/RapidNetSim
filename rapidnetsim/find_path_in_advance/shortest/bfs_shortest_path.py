@@ -26,7 +26,8 @@ class BfsShortestPathStatic:
 
         NIC_num = int(Simulator.CONF_DICT['NIC_num'])
         NIC_set = set([i for i in range(NIC_num)])
-        switch_set = device_set ^ NIC_set
+        used_gpu_set = NIC_set & device_set
+        switch_set = device_set ^ used_gpu_set
 
         shortest_path_length = BfsShortestPathStatic.get_shortest_path_length(rapid_graph, switch_set)
         start = time.time()

@@ -1,8 +1,9 @@
-import math
+
 from rapidnetsim.communication_strategy.strategy_base import StrategyBase
 from rapidnetsim.core.infrastructure.flow import Flow
+import math
 
-class Ring(StrategyBase):
+class Ring2D(StrategyBase):
     def __init__(self) -> None:
         pass
 
@@ -36,9 +37,7 @@ class Ring(StrategyBase):
         from rapidnetsim.core.event.flow_transmit_event import FlowTransmitEvent
         print(f'Time {Simulator.get_current_time()} start task {taskid} occuping NIC num {len(use_NIC_list)}')
         Simulator.task_time_logger.write(f'taskid,{taskid},start_time,{Simulator.get_current_time()}\n')
-        computation_time = float(eval(Simulator.CONF_DICT['task_list'])[taskid][3])
-        schedule_time_cost = Simulator.SCHEDULER_TIME_COST[taskid]
-        #print(f'Expect finish time {model_size/1000+ computation_time+schedule_time_cost}')
+
         # Deal with only 1 GPU occupation
         if task_occupied_NIC_num == 1:
             flow_list = []
@@ -49,7 +48,7 @@ class Ring(StrategyBase):
             )
             self.record_network_occupy(taskid, 0, flow, use_NIC_list[0])
             flow_list.append(flow)
-            Simulator.register_event(FlowTransmitEvent(computation_time+schedule_time_cost, flow_list))
+            Simulator.register_event(FlowTransmitEvent(0, flow_list))
             Simulator.FLOWID += 1
             return
 
@@ -60,8 +59,6 @@ class Ring(StrategyBase):
             # Every round
             for (src, dst, communication_size) in pair_list:
                 # use_NIC_list[src] maps old may-occupied NIC_id to new unoccupied NIC_id
-                if taskid == 2312 or taskid == 2311 or taskid == 2313:
-                    print("debug flow ",taskid, roundid, use_NIC_list[src], use_NIC_list[dst], communication_size)
                 flow = Flow(
                     Simulator.FLOWID, communication_size, None, use_NIC_list[src], use_NIC_list[dst],
                     communication_size, None,
@@ -76,7 +73,7 @@ class Ring(StrategyBase):
         flow_list = []
         for flowid, flow in Simulator.get_wait_transmit_dict()[f'{taskid}_0'].items():
             flow_list.append(flow)
-        Simulator.register_event(FlowTransmitEvent(computation_time+schedule_time_cost, flow_list))
+        Simulator.register_event(FlowTransmitEvent(0, flow_list))
 
 
     def get_task_a_iteration_pair_list(self, task_occupied_NIC_num, model_size, NIC_num_in_a_server, use_NIC_list= [], special_pair = None):
@@ -147,7 +144,6 @@ class Ring(StrategyBase):
             pair_list.append(forward)
         
         # ring allreduce inter servers
-        communication_size = model_size / NIC_num_in_a_server / node_num 
         round_num = node_num 
         for _ in range(round_num):
             forward = []
@@ -164,7 +160,6 @@ class Ring(StrategyBase):
 
 
         # ring allreduce in the intra-server
-        communication_size = model_size / NIC_num_in_a_server
         round_num = NIC_num_in_a_server - 1
         for _ in range(round_num):
             forward = []
@@ -183,3 +178,11 @@ class Ring(StrategyBase):
 
     def get_expected_completion_time(self, task_seq = 0):
         pass
+
+if __name__ == '__main__':
+    test = Ring()
+    res = test.get_ring_every_round_pair(512)
+    print(len(res))
+    print(len(res[0]))
+    
+    

@@ -39,5 +39,5 @@ class TaskStepFinishEvent(Event):
 
         if len(Simulator._event_q) == 0:
             del_global_record_trigger_new_step(taskid, stepid)
-        elif Simulator._event_q[0].get_event_time() > Simulator._current_time:
+        elif Simulator._event_q[0].get_event_time() >= Simulator._current_time:
             del_global_record_trigger_new_step(taskid, stepid)

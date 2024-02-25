@@ -16,10 +16,13 @@ def refresh_taskstep_finish_event():
         Simulator.LAST_TASKSTEPFINISHEVENT.change_to_inactive()
 
     for taskid, taskstep_obj in inflight_taskstep_info.items():
-        expected_finish_time = taskstep_obj.get_expected_finish_time()
+        taskstep_obj.has_cal_time += (Simulator.get_current_time() - taskstep_obj.get_last_step_calculated_time())
+        expected_finish_time = max(0.0000001,taskstep_obj.get_expected_finish_time() - taskstep_obj.has_cal_time)
+        #print("debug expected_finish_time",taskstep_obj._taskid, taskstep_obj._stepid, taskstep_obj.get_expected_finish_time(), taskstep_obj.has_cal_time, Simulator.get_current_time())
         if expected_finish_time <= earliest_finish_time:
             earliest_finish_obj = taskstep_obj 
             earliest_finish_time = expected_finish_time
+        taskstep_obj.set_last_step_calculated_time(Simulator.get_current_time())
 
     if earliest_finish_obj != None:
         earliest_finish_event = TaskStepFinishEvent(earliest_finish_time, earliest_finish_obj)

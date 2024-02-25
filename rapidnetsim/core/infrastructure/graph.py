@@ -29,6 +29,13 @@ class Graph:
                 self._out_edge_dict[start_node_index].append(end_node_index)
             else:
                 self._out_edge_dict[start_node_index] = [end_node_index]
+        tmp_list = []
+        for i in  self._vertex_set:
+            tmp_list.append(i)
+        tmp_list.sort()
+        for i in range(len(tmp_list)-1):
+            print(tmp_list[i],tmp_list[i+1])
+            assert tmp_list[i+1] == tmp_list[i] + 1
 
 
     def refresh_graph_connection_info(self, connect_info_list):

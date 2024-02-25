@@ -20,7 +20,7 @@ source ~/.bashrc
 
 ## Simple Test
 ```
-cd 16kGPU_many_exp/onebigtask/hw_oxc_allreduce_nopeer
+cd large_exp_8192/5000_241/oxc_vclos
 sh start.sh
 ```
 

@@ -17,7 +17,7 @@ class Butterfly2(StrategyBase):
 
         print(f'Time {Simulator.get_current_time()} start task {taskid} occuping NIC num {len(use_NIC_list)}')
         Simulator.task_time_logger.write(f'taskid,{taskid},start_time,{Simulator.get_current_time()}\n')
-
+        computation_time = float(eval(Simulator.CONF_DICT['task_list'])[taskid][3])
 
         conservative = False
         if Simulator.CONF_DICT['find_next_hop_method'] == 'conservative':
@@ -34,7 +34,7 @@ class Butterfly2(StrategyBase):
             )
             self.record_network_occupy(taskid, 0, flow, use_NIC_list[0])
             flow_list.append(flow)
-            Simulator.register_event(FlowTransmitEvent(0, flow_list))
+            Simulator.register_event(FlowTransmitEvent(computation_time, flow_list))
             Simulator.FLOWID += 1
             return
 
@@ -60,7 +60,7 @@ class Butterfly2(StrategyBase):
         flow_list = []
         for flowid, flow in Simulator.get_wait_transmit_dict()[f'{taskid}_0'].items():
             flow_list.append(flow)
-        Simulator.register_event(FlowTransmitEvent(0, flow_list))
+        Simulator.register_event(FlowTransmitEvent(computation_time, flow_list))
 
 
     def get_task_a_iteration_pair_list(self, task_occupied_NIC_num, model_size, NIC_num_in_a_server, use_NIC_list):
